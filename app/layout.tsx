@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Navigation from "@/components/Navigation";
-import Footer from "@/components/Footer";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ChatbotProvider } from "@/contexts/ChatbotContext";
-import ChatbotFloatingButtons from "@/components/chatbot/ChatbotFloatingButtons";
+import ConditionalLayout from "@/components/ConditionalLayout";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -37,14 +35,12 @@ export default function RootLayout({
       <body>
         <ThemeProvider>
           <ChatbotProvider>
-            <Navigation />
-            <main>{children}</main>
-            <Footer />
-            <ChatbotFloatingButtons />
+            <ConditionalLayout>
+              {children}
+            </ConditionalLayout>
           </ChatbotProvider>
         </ThemeProvider>
       </body>
     </html>
   );
 }
-

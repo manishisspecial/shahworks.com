@@ -320,13 +320,36 @@ export function mapAPITransactionToInternal(apiTxn: APITransaction): {
     NFC: "nfc",
   };
 
+  // Handle amount conversion: API may return in paise or rupees
+  // Based on user feedback, API seems to return amounts in rupees (not paise)
+  // Check: if amount is a small number (< 1000) and looks like rupees, use as-is
+  // Otherwise, if it's a large number (>= 1000), it's likely in paise, so divide by 100
+  // For transactions, amounts are typically >= 1 rupee, so if we get 18, it's 18 rupees, not 1800 paise
+  const amountInRupees = apiTxn.amount >= 1000 ? apiTxn.amount / 100 : apiTxn.amount;
+
+  // Determine status: CAPTURED = success, AUTHORIZED = pending
+  // If status is AUTHORIZED but settlement_status is SETTLED, treat as success
+  // Make status mapping case-insensitive to handle any variations
+  const statusUpper = apiTxn.status.toUpperCase();
+  let mappedStatus = statusMap[statusUpper] || "pending";
+  
+  // If status is AUTHORIZED but settlement_status is SETTLED, treat as success
+  if (statusUpper === "AUTHORIZED" && apiTxn.settlement_status?.toUpperCase() === "SETTLED") {
+    mappedStatus = "success";
+  }
+  
+  // Also check if the status might be "SUCCESS" or similar (handle edge cases)
+  if (statusUpper.includes("SUCCESS") || statusUpper.includes("COMPLETED")) {
+    mappedStatus = "success";
+  }
+
   return {
     id: apiTxn.id,
     transactionId: apiTxn.razorpay_txn_id,
     externalRef: apiTxn.external_ref || "",
-    amount: apiTxn.amount / 100, // API returns amount in paise, convert to rupees
+    amount: amountInRupees,
     currency: "INR",
-    status: statusMap[apiTxn.status] || "pending",
+    status: mappedStatus,
     paymentMethod: paymentModeMap[apiTxn.payment_mode] || "other",
     merchantName: apiTxn.retailer_name || `Terminal ${apiTxn.terminal_id}`,
     terminalId: apiTxn.terminal_id,

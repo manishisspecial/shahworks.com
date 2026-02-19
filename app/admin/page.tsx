@@ -47,13 +47,28 @@ export default function AdminDashboard() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useState({
-    startDate: "",
-    endDate: "",
-    status: "",
-    paymentMethod: "",
-    merchantName: "",
-    search: "",
+  
+  // Initialize filters with default date range (last 30 days)
+  const getDefaultDates = () => {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 30);
+    return {
+      startDate: startDate.toISOString().split("T")[0],
+      endDate: endDate.toISOString().split("T")[0],
+    };
+  };
+
+  const [filters, setFilters] = useState(() => {
+    const defaultDates = getDefaultDates();
+    return {
+      startDate: defaultDates.startDate,
+      endDate: defaultDates.endDate,
+      status: "",
+      paymentMethod: "",
+      merchantName: "",
+      search: "",
+    };
   });
   const [selectedTransaction, setSelectedTransaction] = useState<POSTransaction | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -73,9 +88,14 @@ export default function AdminDashboard() {
     setLoading(true);
     setError(null);
     try {
+      // Ensure we have date range (use defaults if missing)
+      const defaultDates = getDefaultDates();
+      const startDate = filters.startDate || defaultDates.startDate;
+      const endDate = filters.endDate || defaultDates.endDate;
+
       const params = new URLSearchParams();
-      if (filters.startDate) params.append("startDate", filters.startDate);
-      if (filters.endDate) params.append("endDate", filters.endDate);
+      params.append("startDate", startDate);
+      params.append("endDate", endDate);
       if (filters.status) params.append("status", filters.status);
       if (filters.paymentMethod) params.append("paymentMethod", filters.paymentMethod);
       if (filters.merchantName) params.append("merchantName", filters.merchantName);
